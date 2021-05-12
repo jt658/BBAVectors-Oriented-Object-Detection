@@ -46,7 +46,7 @@ class EvalModule(object):
                                  result_path,
                                  print_ps=True)
 
-        if args.dataset == 'dota':
+        if args.dataset == 'dota' or args.dataset == 'deepscores':
             merge_path = 'merge_'+args.dataset
             if not os.path.exists(merge_path):
                 os.mkdir(merge_path)

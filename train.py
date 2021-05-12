@@ -23,6 +23,7 @@ class TrainModule(object):
         torch.manual_seed(317)
         self.dataset = dataset
         self.dataset_phase = {'dota': ['train'],
+                              'deepscores': ['train'],
                               'hrsc': ['train', 'test']}
         self.num_classes = num_classes
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
