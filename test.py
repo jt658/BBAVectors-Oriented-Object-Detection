@@ -110,6 +110,7 @@ class TestModule(object):
             decoded_scores = []
             predictions = self.decoder.ctdet_decode(pr_decs)
             pts0, scores0 = func_utils.decode_prediction(predictions, dsets, args, img_id, down_ratio)
+            print(pts0, scores0)
             decoded_pts.append(pts0)
             decoded_scores.append(scores0)
             #nms
@@ -182,7 +183,8 @@ class TestModule(object):
                     box = np.int0(box)
                     cv2.drawContours(ori_image, [box], 0, (255, 255, 255), 1)
 
-            cv2.imshow('pr_image', ori_image)
+            #cv2.imshow('pr_image', ori_image)
+            cv2.imwrite('test'+str(cnt)+".png", ori_image)
             k = cv2.waitKey(0) & 0xFF
             if k == ord('q'):
                 cv2.destroyAllWindows()
