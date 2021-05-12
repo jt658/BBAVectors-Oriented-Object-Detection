@@ -94,10 +94,10 @@ class Deepscores(BaseDataset):
 
         else:
             #image_set_index_file = os.path.join(self.data_dir, 'trainval.txt')
-            test_o = OBBAnns('../ds2_dense/deepscores_test.json')
+            test_o = OBBAnns('../ds2_dense/deepscores_train.json')
             test_o.load_annotations('deepscores')
             #img_idxs = [i for i in range(len(o.img_info))]
-            img_idxs = [i for i in range(2)]
+            img_idxs = [i for i in range(5)]
             imgs, anns = test_o.get_img_ann_pair(idxs=img_idxs, ann_set_filter="deepscores")
 
             for img in anns:

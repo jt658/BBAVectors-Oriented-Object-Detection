@@ -169,7 +169,7 @@ class TestModule(object):
                     # box = cv2.boxPoints(cv2.minAreaRect(box))
                     # ori_image = cv2.drawContours(ori_image, [np.int0(box)], -1, (0,255,0),1,1)
                     cv2.putText(ori_image, '{:.2f} {}'.format(score, cat), (box[1][0], box[1][1]),
-                                cv2.FONT_HERSHEY_COMPLEX, 0.5, (0,255,255), 1,1)
+                                cv2.FONT_HERSHEY_COMPLEX, 0.5, (255,102,102), 1,1)
 
             if args.dataset == 'hrsc':
                 gt_anno = dsets.load_annotation(cnt)
@@ -184,7 +184,7 @@ class TestModule(object):
                     cv2.drawContours(ori_image, [box], 0, (255, 255, 255), 1)
 
             #cv2.imshow('pr_image', ori_image)
-            cv2.imwrite('test'+str(cnt)+".png", ori_image)
+            cv2.imwrite('train'+str(cnt)+".png", ori_image)
             k = cv2.waitKey(0) & 0xFF
             if k == ord('q'):
                 cv2.destroyAllWindows()
