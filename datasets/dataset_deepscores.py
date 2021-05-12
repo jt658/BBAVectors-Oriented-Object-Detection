@@ -2,7 +2,6 @@ from .base import BaseDataset
 import os
 import cv2
 import numpy as np
-from .DOTA_devkit.ResultMerge_multi_process import mergebypoly
 from obb_anns import OBBAnns
 
 class Deepscores(BaseDataset):
@@ -168,7 +167,3 @@ class Deepscores(BaseDataset):
         #     cv2.destroyAllWindows()
         #     exit()
         return annotation
-
-
-    def merge_crop_image_results(self, result_path, merge_path):
-        mergebypoly(result_path, merge_path)
