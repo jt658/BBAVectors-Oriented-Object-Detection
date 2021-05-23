@@ -184,7 +184,7 @@ class TestModule(object):
                     cv2.drawContours(ori_image, [box], 0, (255, 255, 255), 1)
 
             #cv2.imshow('pr_image', ori_image)
-            cv2.imwrite('train'+str(cnt)+".png", ori_image)
+            cv2.imwrite('test_40_epoch_datasize_full_bs_16_'+str(cnt)+".png", ori_image)
             k = cv2.waitKey(0) & 0xFF
             if k == ord('q'):
                 cv2.destroyAllWindows()
@@ -192,5 +192,6 @@ class TestModule(object):
             #"""
 
         total_time = total_time[1:]
+        print('total time is {}'.format(total_time))
         print('avg time is {}'.format(np.mean(total_time)))
         print('FPS is {}'.format(1./np.mean(total_time)))

@@ -8,6 +8,8 @@ from datasets.dataset_deepscores import Deepscores
 from models import ctrbox_net
 import decoder
 import os
+import torch
+import gc
 
 
 def parse_args():
@@ -31,9 +33,11 @@ def parse_args():
     return args
 
 if __name__ == '__main__':
+    gc.collect()
+    torch.cuda.empty_cache()
     args = parse_args()
     dataset = {'dota': DOTA, 'hrsc': None, 'deepscores':Deepscores}
-    num_classes = {'dota': 15, 'hrsc': 1, 'deepscores': 21}
+    num_classes = {'dota': 15, 'hrsc': 1, 'deepscores': 1}
     heads = {'hm': num_classes[args.dataset],
              'wh': 10,
              'reg': 2,

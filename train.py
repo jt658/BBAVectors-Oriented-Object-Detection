@@ -136,7 +136,7 @@ class TrainModule(object):
 
             np.savetxt(os.path.join(save_path, 'train_loss.txt'), train_loss, fmt='%.6f')
 
-            if epoch % 5 == 0 or epoch > 20:
+            if epoch % 10 == 0: #or epoch > 20:
                 self.save_model(os.path.join(save_path, 'model_{}.pth'.format(epoch)),
                                 epoch,
                                 self.model,
@@ -173,7 +173,7 @@ class TrainModule(object):
                     pr_decs = self.model(data_dict['input'])
                     loss = criterion(pr_decs, data_dict)
 
-            running_loss += loss.item()
+            running_loss += loss.detach().item()
         epoch_loss = running_loss / len(data_loader)
         print('{} loss: {}'.format(phase, epoch_loss))
         return epoch_loss
