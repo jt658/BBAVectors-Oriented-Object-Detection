@@ -2,6 +2,7 @@ from .base import BaseDataset
 import os
 import cv2
 import numpy as np
+import random
 from obb_anns import OBBAnns
 from scipy.spatial import distance as dist
 
@@ -75,26 +76,35 @@ class Deepscores(BaseDataset):
                          #'augmentationDot': 41 
                         }
         self.cat_ids = {cat:i for i,cat in enumerate(self.category)}
-        self.img_ids, self.anns, self.cats = self.load_img_ids()
+        self.img_ids, self.anns, self.cats, self.img_id_dict = self.load_img_ids()
         self.image_path = os.path.join(data_dir, 'images')
         self.label_path = os.path.join(data_dir, 'labelTxt')
 
     def load_img_ids(self):
         image_lists = []
-        if self.phase == 'train':
+        image_id_dict = {}
+        if self.phase == 'train' or self.phase == 'val':
             #image_set_index_file = os.path.join(self.data_dir, 'trainval.txt')
             train_o = OBBAnns('../ds2_dense_resize/deepscores_train.json')
             train_o.load_annotations('deepscores')
             cats = train_o.get_cats()
             #img_idxs = [i for i in range(len(o.img_info))]
             img_idxs = [i for i in range(len(train_o.img_info))]
-            #img_idxs = [0]
-            imgs, anns = train_o.get_img_ann_pair(idxs=img_idxs, ann_set_filter="deepscores")
+            random.seed(34)
+            random.shuffle(img_idxs)
+            img_idxs_train = img_idxs[:1090]
+            img_idxs_val = img_idxs[1090:]
+
+            if self.phase == 'train':
+                imgs, anns = train_o.get_img_ann_pair(idxs=img_idxs_train, ann_set_filter="deepscores")
+            elif self.phase == 'val':
+                imgs, anns = train_o.get_img_ann_pair(idxs=img_idxs_val, ann_set_filter="deepscores")
 
             for img in anns:
                 img_np = np.array(img)
                 filename = train_o.get_imgs(ids=[int(img_np[0][4])])[0]['filename']
                 image_lists.append(os.path.splitext(filename)[0])
+                image_id_dict[os.path.splitext(filename)[0]] = int(img_np[0][4])
                 #train_o.visualize(img_idx=0,out_dir='/home/jessicatawade/BBAVectors-Oriented-Object-Detection/', show=False)
 
         else:
@@ -110,7 +120,8 @@ class Deepscores(BaseDataset):
                 img_np = np.array(img)
                 filename = test_o.get_imgs(ids=[int(img_np[0][4])])[0]['filename']
                 image_lists.append(os.path.splitext(filename)[0])
-        return image_lists, anns, cats
+                image_id_dict[os.path.splitext(filename)[0]] = int(img_np[0][4])
+        return image_lists, anns, cats, image_id_dict
 
     def load_image(self, index):
         img_id = self.img_ids[index]
@@ -149,16 +160,16 @@ class Deepscores(BaseDataset):
             if object_instance[2][0] in self.ds_cat_ids.values():
                 count += 1
                 coord = np.array(object_instance[1], dtype=np.float32)
-                coord_reshape = np.reshape(coord, (4,2))
-                coord = self.order_points(coord_reshape)
-                x1 = min(max(float(coord[0][0]/2), 0), w - 1)
-                y1 = min(max(float(coord[0][1]/2), 0), h - 1)
-                x2 = min(max(float(coord[1][0]/2), 0), w - 1)
-                y2 = min(max(float(coord[1][1]/2), 0), h - 1)
-                x3 = min(max(float(coord[2][0]/2), 0), w - 1)
-                y3 = min(max(float(coord[2][1]/2), 0), h - 1)
-                x4 = min(max(float(coord[3][0]/2), 0), w - 1)
-                y4 = min(max(float(coord[3][1]/2), 0), h - 1)
+                #coord_reshape = np.reshape(coord, (4,2))
+                #coord = self.order_points(coord_reshape)
+                x1 = min(max(float(coord[0]/2), 0), w - 1)
+                y1 = min(max(float(coord[1]/2), 0), h - 1)
+                x2 = min(max(float(coord[2]/2), 0), w - 1)
+                y2 = min(max(float(coord[3]/2), 0), h - 1)
+                x3 = min(max(float(coord[4]/2), 0), w - 1)
+                y3 = min(max(float(coord[5]/2), 0), h - 1)
+                x4 = min(max(float(coord[6]/2), 0), w - 1)
+                y4 = min(max(float(coord[7]/2), 0), h - 1)
                 # TODO: filter small instances
                 xmin = max(min(x1, x2, x3, x4), 0)
                 xmax = max(x1, x2, x3, x4)
@@ -198,3 +209,44 @@ class Deepscores(BaseDataset):
             exit()
 
         return annotation
+
+    def dec_evaluation(self, result_path):
+
+
+        o = OBBAnns('../ds2_dense_resize/deepscores_train.json')
+        o.load_annotations("deepscores")
+
+        o.load_proposals(result_path+'/proposals.json')
+        metric_results = o.calculate_metrics()
+
+        cat_id_to_name = {y:x for x,y in self.ds_cat_ids.items()}
+
+        classaps = []
+        map = 0
+
+        for cls_key, avg_dict in metric_results.items():
+            classname = cat_id_to_name[int(cls_key)]
+            if classname == 'background':
+                continue
+            print('classname:', classname)
+
+            rec = avg_dict['recall']
+            prec = avg_dict['precision']
+            ap = avg_dict['accuracy']
+
+            map = map + ap
+            # print('rec: ', rec, 'prec: ', prec, 'ap: ', ap)
+            print('{}:{} '.format(classname, ap*100))
+            classaps.append(ap)
+            # umcomment to show p-r curve of each category
+            # plt.figure(figsize=(8,4))
+            # plt.xlabel('recall')
+            # plt.ylabel('precision')
+            # plt.plot(rec, prec)
+        # plt.show()
+        map = map / len(self.category)
+        print('map:', map*100)
+        # classaps = 100 * np.array(classaps)
+        # print('classaps: ', classaps)
+        return map
+

@@ -1,6 +1,7 @@
 import os
 import torch
 import numpy as np
+import json
 from datasets.DOTA_devkit.ResultMerge_multi_process import py_cpu_nms_poly_fast, py_cpu_nms_poly
 
 
@@ -99,3 +100,62 @@ def write_results(args,
                 for pt in results[cat][img_id]:
                     f.write('{} {:.12f} {:.1f} {:.1f} {:.1f} {:.1f} {:.1f} {:.1f} {:.1f} {:.1f}\n'.format(
                         img_id, pt[8], pt[0], pt[1], pt[2], pt[3], pt[4], pt[5], pt[6], pt[7]))
+
+
+def write_results_deepscores(args,
+                             model,
+                             dsets,
+                             down_ratio,
+                             device,
+                             decoder,
+                             result_path,
+                             print_ps=False):
+    results = {cat: {img_id: [] for img_id in dsets.img_ids} for cat in dsets.category}
+    for index in range(len(dsets)):
+        data_dict = dsets.__getitem__(index)
+        image = data_dict['image'].to(device)
+        img_id = data_dict['img_id']
+        image_w = data_dict['image_w']
+        image_h = data_dict['image_h']
+
+        with torch.no_grad():
+            pr_decs = model(image)
+
+        decoded_pts = []
+        decoded_scores = []
+        torch.cuda.synchronize(device)
+        predictions = decoder.ctdet_decode(pr_decs)
+        pts0, scores0 = decode_prediction(predictions, dsets, args, img_id, down_ratio)
+        decoded_pts.append(pts0)
+        decoded_scores.append(scores0)
+
+        proposal_dict = {"annotation_set":"deepscores", "proposals":[]}
+
+        # nms
+        for cat in dsets.category:
+            if cat == 'background':
+                continue
+            pts_cat = []
+            scores_cat = []
+            for pts0, scores0 in zip(decoded_pts, decoded_scores):
+                pts_cat.extend(pts0[cat])
+                scores_cat.extend(scores0[cat])
+            pts_cat = np.asarray(pts_cat, np.float32)
+            scores_cat = np.asarray(scores_cat, np.float32)
+            if pts_cat.shape[0]:
+                nms_results = non_maximum_suppression(pts_cat, scores_cat)
+                results[cat][img_id].extend(nms_results)
+        if print_ps:
+            print('testing {}/{} data {}'.format(index+1, len(dsets), img_id))
+
+    for cat in dsets.category:
+        if cat == 'background':
+            continue
+        for img_id in results[cat]:
+            for pt in results[cat][img_id]:
+                proposal_dict["proposals"].append({"bbox":[float(pt[0]), float(pt[1]), float(pt[2]), float(pt[3]), float(pt[4]), float(pt[5]), float(pt[6]), float(pt[7])], 
+                    "cat_id": str(dsets.ds_cat_ids[cat]), "img_id": dsets.img_id_dict[img_id], "score": pt[8]})
+
+    with open(os.path.join(result_path, 'proposals.json'), 'w') as json_file:
+        json.dump(proposal_dict, json_file)
+

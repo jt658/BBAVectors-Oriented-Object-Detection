@@ -5,6 +5,7 @@ import numpy as np
 import loss
 import cv2
 import func_utils
+from torch.utils.tensorboard import SummaryWriter
 
 
 def collater(data):
@@ -23,13 +24,14 @@ class TrainModule(object):
         torch.manual_seed(317)
         self.dataset = dataset
         self.dataset_phase = {'dota': ['train'],
-                              'deepscores': ['train'],
+                              'deepscores': ['train', 'val'],
                               'hrsc': ['train', 'test']}
         self.num_classes = num_classes
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self.model = model
         self.decoder = decoder
         self.down_ratio = down_ratio
+        self.writer = SummaryWriter()
 
     def save_model(self, path, epoch, model, optimizer):
         if isinstance(model, torch.nn.DataParallel):
@@ -122,8 +124,17 @@ class TrainModule(object):
                                                            drop_last=True,
                                                            collate_fn=collater)
 
+        dsets_loader['val'] = torch.utils.data.DataLoader(dsets['val'],
+                                                           batch_size=1,
+                                                           shuffle=False,
+                                                           num_workers=args.num_workers,
+                                                           pin_memory=True,
+                                                           drop_last=True,
+                                                           collate_fn=collater)
+
         print('Starting training...')
         train_loss = []
+        val_loss = []
         ap_list = []
         for epoch in range(start_epoch, args.num_epoch+1):
             print('-'*10)
@@ -131,6 +142,7 @@ class TrainModule(object):
             epoch_loss = self.run_epoch(phase='train',
                                         data_loader=dsets_loader['train'],
                                         criterion=criterion)
+            self.writer.add_scalar("Loss/train", epoch_loss, epoch)
             train_loss.append(epoch_loss)
             self.scheduler.step(epoch)
 
@@ -142,8 +154,17 @@ class TrainModule(object):
                                 self.model,
                                 self.optimizer)
 
-            if 'test' in self.dataset_phase[args.dataset] and epoch%5==0:
-                mAP = self.dec_eval(args, dsets['test'])
+            if 'val' in self.dataset_phase[args.dataset] and epoch%5==0:
+
+                val_epoch_loss = self.run_epoch(phase='val',
+                                                data_loader=dsets_loader['val'],
+                                                criterion=criterion)
+                self.writer.add_scalar("Loss/val", val_epoch_loss, epoch)
+                val_loss.append(val_epoch_loss)
+                np.savetxt(os.path.join(save_path, 'val_loss.txt'), val_loss, fmt='%.6f')
+
+                mAP = self.dec_eval(args, dsets['val'])
+                self.writer.add_scalar("mAP/val", mAP, epoch)
                 ap_list.append(mAP)
                 np.savetxt(os.path.join(save_path, 'ap_list.txt'), ap_list, fmt='%.6f')
 
@@ -185,11 +206,11 @@ class TrainModule(object):
             os.mkdir(result_path)
 
         self.model.eval()
-        func_utils.write_results(args,
-                                 self.model,dsets,
-                                 self.down_ratio,
-                                 self.device,
-                                 self.decoder,
-                                 result_path)
+        func_utils.write_results_deepscores(args,
+                                            self.model,dsets,
+                                            self.down_ratio,
+                                            self.device,
+                                            self.decoder,
+                                            result_path)
         ap = dsets.dec_evaluation(result_path)
         return ap
