@@ -37,11 +37,11 @@ if __name__ == '__main__':
     torch.cuda.empty_cache()
     args = parse_args()
     dataset = {'dota': DOTA, 'hrsc': None, 'deepscores':Deepscores}
-    num_classes = {'dota': 15, 'hrsc': 1, 'deepscores': 10}
+    num_classes = {'dota': 15, 'hrsc': 1, 'deepscores': 8}
     heads = {'hm': num_classes[args.dataset],
-             'wh': 8,
-             'reg': 2
-             #'cls_theta': 1
+             'wh': 10,
+             'reg': 2,
+             'cls_theta': 1
              }
     down_ratio = 4
     model = ctrbox_net.CTRBOX(heads=heads,

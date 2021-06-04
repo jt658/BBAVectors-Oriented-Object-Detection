@@ -24,7 +24,8 @@ class TrainModule(object):
         torch.manual_seed(317)
         self.dataset = dataset
         self.dataset_phase = {'dota': ['train'],
-                              'deepscores': ['train', 'val'],
+                              #'deepscores': ['train', 'val', 'val2'],
+                              'deepscores': ['train', 'train2'],
                               'hrsc': ['train', 'test']}
         self.num_classes = num_classes
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -124,13 +125,13 @@ class TrainModule(object):
                                                            drop_last=True,
                                                            collate_fn=collater)
 
-        dsets_loader['val'] = torch.utils.data.DataLoader(dsets['val'],
-                                                           batch_size=1,
-                                                           shuffle=False,
-                                                           num_workers=args.num_workers,
-                                                           pin_memory=True,
-                                                           drop_last=True,
-                                                           collate_fn=collater)
+        #dsets_loader['val'] = torch.utils.data.DataLoader(dsets['val'],
+        #                                                   batch_size=1,
+        #                                                   shuffle=False,
+        #                                                   num_workers=args.num_workers,
+        #                                                   pin_memory=True,
+        #                                                   drop_last=True,
+        #                                                   collate_fn=collater)
 
         print('Starting training...')
         train_loss = []
@@ -144,7 +145,8 @@ class TrainModule(object):
                                         criterion=criterion)
             self.writer.add_scalar("Loss/train", epoch_loss, epoch)
             train_loss.append(epoch_loss)
-            self.scheduler.step(epoch)
+            #self.scheduler.step(epoch)
+            self.scheduler.step()
 
             np.savetxt(os.path.join(save_path, 'train_loss.txt'), train_loss, fmt='%.6f')
 
@@ -153,6 +155,12 @@ class TrainModule(object):
                                 epoch,
                                 self.model,
                                 self.optimizer)
+            if epoch % 100 == 0:
+                mAP = self.dec_eval(args, dsets['train2'])
+                self.writer.add_scalar("mAP/val", mAP, epoch)
+                ap_list.append(mAP)
+                np.savetxt(os.path.join(save_path, 'ap_list.txt'), ap_list, fmt='%.6f')
+
 
             if 'val' in self.dataset_phase[args.dataset] and epoch%5==0:
 
@@ -163,7 +171,7 @@ class TrainModule(object):
                 val_loss.append(val_epoch_loss)
                 np.savetxt(os.path.join(save_path, 'val_loss.txt'), val_loss, fmt='%.6f')
 
-                mAP = self.dec_eval(args, dsets['val'])
+                mAP = self.dec_eval(args, dsets['val2'])
                 self.writer.add_scalar("mAP/val", mAP, epoch)
                 ap_list.append(mAP)
                 np.savetxt(os.path.join(save_path, 'ap_list.txt'), ap_list, fmt='%.6f')
@@ -172,6 +180,8 @@ class TrainModule(object):
                             epoch,
                             self.model,
                             self.optimizer)
+            self.writer.flush()
+            self.writer.close()
 
     def run_epoch(self, phase, data_loader, criterion):
         if phase == 'train':

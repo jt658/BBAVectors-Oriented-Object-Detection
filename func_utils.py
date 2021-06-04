@@ -153,7 +153,7 @@ def write_results_deepscores(args,
             continue
         for img_id in results[cat]:
             for pt in results[cat][img_id]:
-                proposal_dict["proposals"].append({"bbox":[float(pt[0]), float(pt[1]), float(pt[2]), float(pt[3]), float(pt[4]), float(pt[5]), float(pt[6]), float(pt[7])], 
+                proposal_dict["proposals"].append({"bbox":[2*float(pt[0]), 2*float(pt[1]), 2*float(pt[2]), 2*float(pt[3]), 2*float(pt[4]), 2*float(pt[5]), 2*float(pt[6]), 2*float(pt[7])], 
                     "cat_id": str(dsets.ds_cat_ids[cat]), "img_id": dsets.img_id_dict[img_id], "score": pt[8]})
 
     with open(os.path.join(result_path, 'proposals.json'), 'w') as json_file:

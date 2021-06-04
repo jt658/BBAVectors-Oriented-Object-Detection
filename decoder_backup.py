@@ -50,7 +50,7 @@ class DecDecoder(object):
         heat = pr_decs['hm']
         wh = pr_decs['wh']
         reg = pr_decs['reg']
-        #cls_theta = pr_decs['cls_theta']
+        cls_theta = pr_decs['cls_theta']
 
         batch, c, height, width = heat.size()
         heat = self._nms(heat)
@@ -63,12 +63,11 @@ class DecDecoder(object):
         clses = clses.view(batch, self.K, 1).float()
         scores = scores.view(batch, self.K, 1)
         wh = self._tranpose_and_gather_feat(wh, inds)
-        wh = wh.view(batch, self.K, 8)
+        wh = wh.view(batch, self.K, 10)
         # add
-        #cls_theta = self._tranpose_and_gather_feat(cls_theta, inds)
-        #cls_theta = cls_theta.view(batch, self.K, 1)
-        #mask = (cls_theta>0.8).float().view(batch, self.K, 1)
-        mask = 1.0
+        cls_theta = self._tranpose_and_gather_feat(cls_theta, inds)
+        cls_theta = cls_theta.view(batch, self.K, 1)
+        mask = (cls_theta>0.8).float().view(batch, self.K, 1)
         #
         tt_x = (xs+wh[..., 0:1])*mask + (xs)*(1.-mask)
         tt_y = (ys+wh[..., 1:2])*mask + (ys-wh[..., 9:10]/2)*(1.-mask)
@@ -95,5 +94,4 @@ class DecDecoder(object):
 
         index = (scores>self.conf_thresh).squeeze(0).squeeze(1)
         detections = detections[:,index,:]
-        print(detections.data.cpu().numpy())
         return detections.data.cpu().numpy()

@@ -48,11 +48,11 @@ class TestModule(object):
     def imshow_heatmap(self, pr_dec, images):
         wh = pr_dec['wh']
         hm = pr_dec['hm']
-        #cls_theta = pr_decs['cls_theta']
+        cls_theta = pr_decs['cls_theta']
         wh_w = wh[0, 0, :, :].data.cpu().numpy()
         wh_h = wh[0, 1, :, :].data.cpu().numpy()
         hm = hm[0, 0, :, :].data.cpu().numpy()
-        #cls_theta = cls_theta[0, 0, :, :].data.cpu().numpy()
+        cls_theta = cls_theta[0, 0, :, :].data.cpu().numpy()
         images = np.transpose((images.squeeze(0).data.cpu().numpy() + 0.5) * 255, (1, 2, 0)).astype(np.uint8)
         wh_w = cv2.resize(wh_w, (images.shape[1], images.shape[0]))
         wh_h = cv2.resize(wh_h, (images.shape[1], images.shape[0]))
@@ -67,9 +67,9 @@ class TestModule(object):
         ax3 = fig.add_subplot(2, 3, 3)
         ax3.set_xlabel('center hm')
         ax3.imshow(hm)
-        #ax5 = fig.add_subplot(2, 3, 5)
-        #ax5.set_xlabel('input image')
-        #ax5.imshow(cls_theta)
+        ax5 = fig.add_subplot(2, 3, 5)
+        ax5.set_xlabel('input image')
+        ax5.imshow(cls_theta)
         ax6 = fig.add_subplot(2, 3, 6)
         ax6.set_xlabel('input image')
         ax6.imshow(images)

@@ -169,9 +169,9 @@ class BaseDataset(data.Dataset):
         image_w = self.input_w // self.down_ratio
 
         hm = np.zeros((self.num_classes, image_h, image_w), dtype=np.float32)
-        wh = np.zeros((self.max_objs, 8), dtype=np.float32)
+        wh = np.zeros((self.max_objs, 10), dtype=np.float32)
         ## add
-        #cls_theta = np.zeros((self.max_objs, 1), dtype=np.float32)
+        cls_theta = np.zeros((self.max_objs, 1), dtype=np.float32)
         ## add end
         reg = np.zeros((self.max_objs, 2), dtype=np.float32)
         ind = np.zeros((self.max_objs), dtype=np.int64)
@@ -221,8 +221,8 @@ class BaseDataset(data.Dataset):
             # cv2.line(copy_image1, (cen_x, cen_y), (int(ll[0]), int(ll[1])), (255, 0, 0), 1, 1)
             #####################################################################################
             # horizontal channel
-            #w_hbbox, h_hbbox = self.cal_bbox_wh(pts_4)
-            #wh[k, 8:10] = 1. * w_hbbox, 1. * h_hbbox
+            w_hbbox, h_hbbox = self.cal_bbox_wh(pts_4)
+            wh[k, 8:10] = 1. * w_hbbox, 1. * h_hbbox
             #####################################################################################
             # # draw
             # cv2.line(copy_image2, (cen_x, cen_y), (int(cen_x), int(cen_y-wh[k, 9]/2)), (0, 0, 255), 1, 1)
@@ -234,9 +234,9 @@ class BaseDataset(data.Dataset):
             # if abs(theta)>3 and abs(theta)<90-3:
             #     cls_theta[k, 0] = 1
             # v1
-            #jaccard_score = ex_box_jaccard(pts_4.copy(), self.cal_bbox_pts(pts_4).copy())
-            #if jaccard_score<0.95:
-            #    cls_theta[k, 0] = 1
+            jaccard_score = ex_box_jaccard(pts_4.copy(), self.cal_bbox_pts(pts_4).copy())
+            if jaccard_score<0.95:
+                cls_theta[k, 0] = 1
         # ###################################### view Images #####################################
         # # hm_show = np.uint8(cv2.applyColorMap(np.uint8(hm[0, :, :] * 255), cv2.COLORMAP_JET))
         # # copy_image = cv2.addWeighted(np.uint8(copy_image), 0.4, hm_show, 0.8, 0)
@@ -255,8 +255,8 @@ class BaseDataset(data.Dataset):
                'reg_mask': reg_mask,
                'ind': ind,
                'wh': wh,
-               'reg': reg
-               #'cls_theta':cls_theta,
+               'reg': reg,
+               'cls_theta':cls_theta,
                }
         return ret
 

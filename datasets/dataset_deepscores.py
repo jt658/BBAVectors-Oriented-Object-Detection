@@ -9,16 +9,16 @@ from scipy.spatial import distance as dist
 class Deepscores(BaseDataset):
     def __init__(self, data_dir, phase, input_h=None, input_w=None, down_ratio=None):
         super(Deepscores, self).__init__(data_dir, phase, input_h, input_w, down_ratio)
-        self.category = ['beam'
+        self.category = ['beam',
                          #'stem',
-                         #'noteheadBlackInSpace',
-                         #'noteheadBlackOnLine',
-                         #'noteheadHalfInSpace',
-                         #'noteheadHalfOnLine',
-                         #'noteheadWholeInSpace',
-                         #'noteheadWholeOnLine',
-                         #'noteheadDoubleWholeInSpace',
-                         #'noteheadDoubleWholeOnLine',
+                         'noteheadBlackInSpace',
+                         'noteheadBlackOnLine',
+                         'noteheadHalfInSpace',
+                         'noteheadHalfOnLine',
+                         'noteheadWholeInSpace',
+                         'noteheadWholeOnLine',
+                         'noteheadDoubleWholeInSpace',
+                         'noteheadDoubleWholeOnLine',
                          #'flag8thUp',
                          #'flag8thDown',
                          #'flag16thUp',
@@ -29,18 +29,19 @@ class Deepscores(BaseDataset):
                          #'flag64thDown',
                          #'flag128thUp',
                          #'flag128thDown',
+                         'slur'
                          #'augmentationDot'
                          ]
-        self.color_pans = [(204,78,210)]
-                           #(0,192,255),
-                           #(0,131,0),
-                           #(240,176,0),
-                           #(254,100,38),
-                           #(0,0,255),
-                           #(182,117,46),
-                           #(185,60,129),
-                           #(204,153,255),
-                           #(80,208,146),
+        self.color_pans = [(204,78,210),
+                           (0,192,255),
+                           (0,131,0),
+                           (240,176,0),
+                           (254,100,38),
+                           (0,0,255),
+                           (182,117,46),
+                           (185,60,129),
+                           (204,153,255),
+                           (80,208,146)
                            #(0,0,204),
                            #(17,90,197),
                            #(0,255,255),
@@ -51,18 +52,19 @@ class Deepscores(BaseDataset):
                            #(166, 231, 11),
                            #(53, 121, 190),
                            #(174, 212, 32),
-                           #(191, 105, 32)]
+                           #(191, 105, 32)
+                           ]
         self.num_classes = len(self.category)
-        self.ds_cat_ids =  {'beam': 122
+        self.ds_cat_ids =  {'beam': 122,
                          #'stem': 42,
-                         #'noteheadBlackInSpace': 27,
-                         #'noteheadBlackOnLine': 25,
-                         #'noteheadHalfInSpace': 31,
-                         #'noteheadHalfOnLine': 29,
-                         #'noteheadWholeInSpace': 35,
-                         #'noteheadWholeOnLine': 33,
-                         #'noteheadDoubleWholeInSpace': 39,
-                         #'noteheadDoubleWholeOnLine': 37,
+                         'noteheadBlackInSpace': 27,
+                         'noteheadBlackOnLine': 25,
+                         'noteheadHalfInSpace': 31,
+                         'noteheadHalfOnLine': 29,
+                         'noteheadWholeInSpace': 35,
+                         'noteheadWholeOnLine': 33,
+                         'noteheadDoubleWholeInSpace': 39,
+                         'noteheadDoubleWholeOnLine': 37,
                          #'flag8thUp': 48,
                          #'flag8thDown': 54,
                          #'flag16thUp': 50,
@@ -73,6 +75,7 @@ class Deepscores(BaseDataset):
                          #'flag64thDown': 58,
                          #'flag128thUp': 53,
                          #'flag128thDown' : 59,
+                         'slur': 121
                          #'augmentationDot': 41 
                         }
         self.cat_ids = {cat:i for i,cat in enumerate(self.category)}
@@ -83,21 +86,22 @@ class Deepscores(BaseDataset):
     def load_img_ids(self):
         image_lists = []
         image_id_dict = {}
-        if self.phase == 'train' or self.phase == 'val':
+        if self.phase == 'train' or self.phase == 'val' or self.phase == 'val2' or self.phase == 'train2':
             #image_set_index_file = os.path.join(self.data_dir, 'trainval.txt')
             train_o = OBBAnns('../ds2_dense_resize/deepscores_train.json')
             train_o.load_annotations('deepscores')
             cats = train_o.get_cats()
-            #img_idxs = [i for i in range(len(o.img_info))]
             img_idxs = [i for i in range(len(train_o.img_info))]
-            random.seed(34)
-            random.shuffle(img_idxs)
-            img_idxs_train = img_idxs[:1090]
-            img_idxs_val = img_idxs[1090:]
+            #img_idxs = [i for i in range(len(train_o.img_info))]
+            #random.seed(34)
+            #random.shuffle(img_idxs)
+            #img_idxs_train = img_idxs[:1212]
+            img_idxs_train = img_idxs
+            #img_idxs_val = img_idxs[1212:]
 
-            if self.phase == 'train':
+            if self.phase == 'train' or self.phase == 'train2':
                 imgs, anns = train_o.get_img_ann_pair(idxs=img_idxs_train, ann_set_filter="deepscores")
-            elif self.phase == 'val':
+            elif self.phase == 'val' or self.phase == 'val2':
                 imgs, anns = train_o.get_img_ann_pair(idxs=img_idxs_val, ann_set_filter="deepscores")
 
             for img in anns:
@@ -108,12 +112,20 @@ class Deepscores(BaseDataset):
                 #train_o.visualize(img_idx=0,out_dir='/home/jessicatawade/BBAVectors-Oriented-Object-Detection/', show=False)
 
         else:
-            #image_set_index_file = os.path.join(self.data_dir, 'trainval.txt')
-            test_o = OBBAnns('../ds2_dense_resize/deepscores_test.json')
+            #test_o = OBBAnns('../ds2_dense_resize/deepscores_test.json')
+            test_o = OBBAnns('../ds2_dense_resize/deepscores_train.json')
             test_o.load_annotations('deepscores')
             cats = test_o.get_cats()
-            #img_idxs = [i for i in range(len(o.img_info))]
+            #img_idxs = [i for i in range(len(test_o.img_info))]
+            #random.seed(34)
+            #random.shuffle(img_idxs)
+            #img_idxs = img_idxs[0:16]
             img_idxs = [i for i in range(16)]
+            #img_idxs = [i for i in range(len(test_o.img_info))]
+            #random.seed(34)
+            #random.shuffle(img_idxs)
+            #img_idxs = img_idxs[:16]
+
             imgs, anns = test_o.get_img_ann_pair(idxs=img_idxs, ann_set_filter="deepscores")
 
             for img in anns:
@@ -160,16 +172,26 @@ class Deepscores(BaseDataset):
             if object_instance[2][0] in self.ds_cat_ids.values():
                 count += 1
                 coord = np.array(object_instance[1], dtype=np.float32)
-                #coord_reshape = np.reshape(coord, (4,2))
-                #coord = self.order_points(coord_reshape)
-                x1 = min(max(float(coord[0]/2), 0), w - 1)
-                y1 = min(max(float(coord[1]/2), 0), h - 1)
-                x2 = min(max(float(coord[2]/2), 0), w - 1)
-                y2 = min(max(float(coord[3]/2), 0), h - 1)
-                x3 = min(max(float(coord[4]/2), 0), w - 1)
-                y3 = min(max(float(coord[5]/2), 0), h - 1)
-                x4 = min(max(float(coord[6]/2), 0), w - 1)
-                y4 = min(max(float(coord[7]/2), 0), h - 1)
+                coord_reshape = np.reshape(coord, (4,2))
+                coord = self.order_points(coord_reshape)
+
+                x1 = min(max(float(coord[0][0]/2), 0), w - 1)
+                y1 = min(max(float(coord[0][1]/2), 0), h - 1)
+                x2 = min(max(float(coord[1][0]/2), 0), w - 1)
+                y2 = min(max(float(coord[1][1]/2), 0), h - 1)
+                x3 = min(max(float(coord[2][0]/2), 0), w - 1)
+                y3 = min(max(float(coord[2][1]/2), 0), h - 1)
+                x4 = min(max(float(coord[3][0]/2), 0), w - 1)
+                y4 = min(max(float(coord[3][1]/2), 0), h - 1)
+
+                #x1 = min(max(float(coord[0]/2), 0), w - 1)
+                #y1 = min(max(float(coord[1]/2), 0), h - 1)
+                #x2 = min(max(float(coord[2]/2), 0), w - 1)
+                #y2 = min(max(float(coord[3]/2), 0), h - 1)
+                #x3 = min(max(float(coord[4]/2), 0), w - 1)
+                #y3 = min(max(float(coord[5]/2), 0), h - 1)
+                #x4 = min(max(float(coord[6]/2), 0), w - 1)
+                #y4 = min(max(float(coord[7]/2), 0), h - 1)
                 # TODO: filter small instances
                 xmin = max(min(x1, x2, x3, x4), 0)
                 xmax = max(x1, x2, x3, x4)
@@ -217,7 +239,7 @@ class Deepscores(BaseDataset):
         o.load_annotations("deepscores")
 
         o.load_proposals(result_path+'/proposals.json')
-        metric_results = o.calculate_metrics()
+        metric_results = o.calculate_metrics(classwise=True)
 
         cat_id_to_name = {y:x for x,y in self.ds_cat_ids.items()}
 
